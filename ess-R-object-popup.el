@@ -49,7 +49,9 @@
                         (setq myfun
                               (cdr(assoc-string "other"
                                                 ess-R-object-popup-alist))))
+                    (if (string=  myfun "str")
                     (ess-command (concat myfun "(" objname ")\n") tmpbuf)
+                    (ess-command (concat myfun "(" objname ");" "str(" objname ")\n" ) tmpbuf))
                     (let ((bs (buffer-string)))
                       (progn
                         (set-buffer curbuf)
@@ -58,6 +60,5 @@
 
 ;; my default key map
 (define-key ess-mode-map "\C-c\C-g" 'ess-R-object-popup)
-
  (provide 'ess-R-object-popup)
 
