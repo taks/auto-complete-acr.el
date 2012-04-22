@@ -44,43 +44,76 @@
 (require 'anything)
 (require 'ess-site)
 
+(defvar anything-R-default-limit
+  anything-candidate-number-limit)
+
+(defvar anything-R-help-limit
+  anything-R-default-limit)
+
+(defvar anything-R-local-limit
+  anything-R-default-limit)
+
+(defvar anything-R-localpkg-limit
+  anything-R-default-limit)
+
+(defvar anything-R-repospkg-limit
+  anything-R-default-limit)
+
+
+(defun anything-R-cmd-head10 (obj-name)
+  (ess-execute (concat "head(" obj-name ", n = 10)\n") nil (concat "R head: " obj-name)))
+
+(defun anything-R-cmd-head100 (obj-name)
+  (ess-execute (concat "head(" obj-name ", n = 100)\n") nil (concat "R head: " obj-name)))
+
+(defun anything-R-cmd-tail (obj-name)
+  (ess-execute (concat "tail(" obj-name ", n = 10)\n") nil (concat "R tail: " obj-name)))
+
+(defun anything-R-cmd-str (obj-name)
+  (ess-execute (concat "str(" obj-name ")\n") nil (concat "R str: " obj-name)))
+
+(defun anything-R-cmd-summary (obj-name)
+  (ess-execute (concat "summary(" obj-name ")\n") nil (concat "R summary: " obj-name)))
+
+(defun anything-R-cmd-print (obj-name)
+  (ess-execute (concat "print(" obj-name ")\n") nil (concat "R object: " obj-name)))
+
+(defun anything-R-cmd-dput (obj-name)
+  (ess-execute (concat "dput(" obj-name ")\n") nil (concat "R dput: " obj-name)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;anything-c-source-R-help
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq anything-c-source-R-help
-      '((name . "R objects / help")
+      `((name . "R objects / help")
         (init . (lambda ()
-                  ;; this grabs the process name associated with the buffer
-                  (setq anything-c-ess-local-process-name ess-local-process-name)))
-        (candidates . (lambda ()
+                  (ess-force-buffer-current "Process to load into: ")
+                  (let ((ess-proc ess-local-process-name))
+                    (if ess-proc
                         (condition-case nil
-                            (ess-get-object-list anything-c-ess-local-process-name)
-                          (error nil))))
+                            (with-current-buffer (anything-candidate-buffer 'local)
+                              (insert
+                               (mapconcat 'identity (ess-get-object-list ess-proc) "\n"))))
+                      (error nil)))))
+        (candidates-in-buffer)
+        (candidate-number-limit . ,anything-R-help-limit)
         (action
          ("help" . ess-display-help-on-object)
-         ("head (10)" . (lambda(obj-name)
-                          (ess-execute (concat "head(" obj-name ", n = 10)\n") nil (concat "R head: " obj-name))))
-         ("head (100)" . (lambda(obj-name)
-                           (ess-execute (concat "head(" obj-name ", n = 100)\n") nil (concat "R head: " obj-name))))
-         ("tail" . (lambda(obj-name)
-                     (ess-execute (concat "tail(" obj-name ", n = 10)\n") nil (concat "R tail: " obj-name))))
-         ("str" . (lambda(obj-name)
-                    (ess-execute (concat "str(" obj-name ")\n") nil (concat "R str: " obj-name))))
-         ("summary" . (lambda(obj-name)
-                        (ess-execute (concat "summary(" obj-name ")\n") nil (concat "R summary: " obj-name))))
-         ("view source" . (lambda(obj-name)
-                            (ess-execute (concat "print(" obj-name ")\n") nil (concat "R object: " obj-name))))
-         ("dput" . (lambda(obj-name)
-                     (ess-execute (concat "dput(" obj-name ")\n") nil (concat "R dput: " obj-name)))))
-        (volatile)))
+         ("head (10)" . anything-R-cmd-head10)
+         ("head (100)" . anything-R-cmd-head100)
+         ("tail" . anything-R-cmd-tail)
+         ("str" . anything-R-cmd-str)
+         ("summary" . anything-R-cmd-summary)
+         ("view source" . anything-R-cmd-print)
+         ("dput" . anything-R-cmd-dput))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; anything-c-source-R-local
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq anything-c-source-R-local
-      '((name . "R local objects")
+      `((name . "R local objects")
         (init . (lambda ()
                   ;; this grabs the process name associated with the buffer
                   (setq anything-c-ess-local-process-name ess-local-process-name)
@@ -93,25 +126,19 @@
                                 (progn
                                   (setq buf (current-buffer))
                                   (with-current-buffer anything-c-ess-buffer
-                                    (ess-command "print(ls.str(), max.level=0)\n" buf))
+                                    (ess-command "print(ls.str(all.names = TRUE), max.level=0)\n" buf))
                                   (split-string (buffer-string) "\n" t)))
                             (error nil)))))
+        (candidate-number-limit . ,anything-R-local-limit)
         (display-to-real . (lambda (obj-name) (car (split-string obj-name " : " t))))
         (action
-         ("str" . (lambda(obj-name)
-                    (ess-execute (concat "str(" obj-name ")\n") nil (concat "R str: " obj-name))))
-         ("summary" . (lambda(obj-name)
-                        (ess-execute (concat "summary(" obj-name ")\n") nil (concat "R summary: " obj-name))))
-         ("head (10)" . (lambda(obj-name)
-                          (ess-execute (concat "head(" obj-name ", n = 10)\n") nil (concat "R head: " obj-name))))
-         ("head (100)" . (lambda(obj-name)
-                           (ess-execute (concat "head(" obj-name ", n = 100)\n") nil (concat "R head: " obj-name))))
-         ("tail" . (lambda(obj-name)
-                     (ess-execute (concat "tail(" obj-name ", n = 10)\n") nil (concat "R tail: " obj-name))))
-         ("print" . (lambda(obj-name)
-                      (ess-execute (concat "print(" obj-name ")\n") nil (concat "R object: " obj-name))))
-         ("dput" . (lambda(obj-name)
-                     (ess-execute (concat "dput(" obj-name ")\n") nil (concat "R dput: " obj-name)))))
+         ("str" . anything-R-cmd-str)
+         ("summary" . anything-R-cmd-summary)
+         ("head (10)" . anything-R-cmd-head10)
+         ("head (100)" . anything-R-cmd-head100)
+         ("tail" . anything-R-cmd-tail)
+         ("print" . anything-R-cmd-print)
+         ("dput" . anything-R-cmd-dput))
         (volatile)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -131,7 +158,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq anything-c-source-R-localpkg
-      '((name . "R-local-packages")
+      `((name . "R-local-packages")
         (init . (lambda ()
                   ;; this grabs the process name associated with the buffer
                   (setq anything-c-ess-local-process-name ess-local-process-name)
@@ -148,7 +175,7 @@
 
                                   (split-string (buffer-string) "\n" t)))
                             (error nil)))))
-
+        (candidate-number-limit . ,anything-R-localpkg-limit)
         (action
          ("load packages" . (lambda(obj-name)
                               (ess-execute (concat "library(" obj-name ")\n") t )))
@@ -162,7 +189,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (setq anything-c-source-R-repospkg
-      '((name . "R-repos-packages")
+      `((name . "R-repos-packages")
         (init . (lambda ()
                   ;; this grabs the process name associated with the buffer
                   (setq anything-c-ess-local-process-name ess-local-process-name)
@@ -179,7 +206,7 @@
                                   ;; (ess-command "writeLines(paste('', sort(.packages(all.available=TRUE)), sep=''))\n" buf))
                                   (split-string (buffer-string) "\n" t)))
                             (error nil)))))
-
+        (candidate-number-limit . ,anything-R-repospkg-limit)
         (action
          ("install packages" . (lambda(obj-name)
                                  (ess-execute (concat "install.packages(\"" obj-name "\")\n") t)))
